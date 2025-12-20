@@ -1,0 +1,20 @@
+{
+    "name": "verified-custody-audit",
+    "version": "1.0.0",
+    "description": "Security audit submission for Verified Custody",
+    "scripts": {
+        "test": "npm run test:all",
+        "test:all": "node scripts/verify_vault_theft.js && node scripts/verify_sybil.js && node scripts/verify_notification_spam.js",
+        "poc:theft": "node scripts/verify_vault_theft.js",
+        "poc:dos": "node pocs/poc_dos.js",
+        "poc:sybil": "node scripts/verify_sybil.js",
+        "poc:gas": "node pocs/poc_gas_exposure.js",
+        "poc:pin": "node pocs/poc_pin_bruteforce.js"
+    },
+    "dependencies": {
+        "ethers": "^5.7.2",
+        "crypto-js": "^4.2.0"
+    },
+    "author": "Security Researcher",
+    "license": "MIT"
+}
