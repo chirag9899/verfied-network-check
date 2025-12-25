@@ -1,4 +1,4 @@
-# Verified Custody Security Audit
+## Verified Custody Security Audit
 
 **Date:** December 20, 2025
 
