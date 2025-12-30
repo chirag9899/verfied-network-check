@@ -1,7 +1,7 @@
 # 📑 Security Audit Report: Verified Custody
 
 **Date:** December 30, 2025  
-**Version:** 1.0 (Final)  
+**Version:** 1.1 (Final - Updated Evidence)  
 **Target:** [0x3B3AD30e32fFef3dD598dd3EfDf6DCC392897786](https://sepolia.etherscan.io/address/0x3B3AD30e32fFef3dD598dd3EfDf6DCC392897786)  
 **Status:** 🔴 **NON-PRODUCTION READY**
 
@@ -9,7 +9,7 @@
 
 ## 🔍 Executive Summary
 
-The security audit of the **Verified Custody** contract uncovered **6 critical and high-severity vulnerabilities**. The most severe findings allow an external attacker to recover "protected" private keys from the blockchain in under one second. Furthermore, the multisig governance model can be completely bypassed through Sybil attacks and threshold manipulation.
+The security audit of the **Verified Custody** contract uncovered **5 critical and high-severity vulnerabilities**. The most severe findings allow an external attacker to recover "protected" private keys from the blockchain in under one second. Furthermore, the multisig governance model can be completely bypassed through Sybil attacks and threshold manipulation.
 
 ### 🚩 Vulnerability Overview
 
@@ -20,7 +20,6 @@ The security audit of the **Verified Custody** contract uncovered **6 critical a
 | **VUL-03** | Quorum manipulation (1-of-N) | 🔴 **CRITICAL** | High | Bypass of Security |
 | **VUL-04** | Calldata Privacy Leak | 🟠 **HIGH** | Guaranteed | Permanent Exposure |
 | **VUL-05** | Gas Griefing / State Bloat | 🟠 **HIGH** | Medium | Denial of Service |
-| **VUL-06** | Zero Vault ID Collision | 🟠 **HIGH** | Medium | Data Integrity Loss |
 
 ---
 
@@ -34,7 +33,7 @@ The security audit of the **Verified Custody** contract uncovered **6 critical a
 *   **Attack Vector:** An attacker captures the encrypted shard from public calldata and runs a local brute-force attack (10,000 combinations).
 *   **Impact:** Complete recovery of any private key managed by the system.
 *   **Proof:** `scripts/proof_live_pin_crack.js`
-*   **Evidence:** [0x19fc8bae...](https://sepolia.etherscan.io/tx/0x19fc8bae380489953adcbdee8dc830c262c5cdb5006d625e1657c91d4e021a81)
+*   **Evidence:** [0x209d224e...](https://sepolia.etherscan.io/tx/0x209d224e02ba4b6475fe8cc19c623764b34c565bae7db3d7faf1d9138283863e)
 
 ---
 
@@ -66,18 +65,7 @@ The security audit of the **Verified Custody** contract uncovered **6 critical a
 *   **Root Cause:** Lack of input size validation on the `_shard` string.
 *   **Attack Vector:** Attacker submits massive strings (e.g., 50KB+) to the contract, causing state bloat and potential block-level gas pressure.
 *   **Impact:** Increased costs for all users and potential disruption of the node network.
-*   **Evidence:** [0x61dab1f7...](https://sepolia.etherscan.io/tx/0x61dab1f738f7a9359e9a4f6d4d6e2e28a559e8f6e6d621e25e1657c91d4e021a81)
-
----
-
-### VUL-06: Zero Vault ID Collision
-> [!WARNING]
-> **Severity:** HIGH (CVSS 8.0) | **Likelihood:** MEDIUM
-
-*   **Root Cause:** Failure to validate `_creator != 0x0`.
-*   **Exploit:** Multiple users using a `0` or `null` vault ID will map to the exact same storage slot, allowing cross-user data overwrites.
-*   **Impact:** Potential locking of funds or theft for any user not explicitly setting a unique ID.
-*   **Evidence:** [0x171e6cc5...](https://sepolia.etherscan.io/tx/0x171e6cc5980489953adcbdee8dc830c262c5cdb5006d625e1657c91d4e021a81)
+*   **Evidence:** [0x8c4d3bfe...](https://sepolia.etherscan.io/tx/0x8c4d3bfe4c1f9a63f4628278919d539bf17d398d80875c6669bcc0feba2418da)
 
 ---
 
