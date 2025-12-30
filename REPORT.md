@@ -67,7 +67,10 @@ The security audit of the **Verified Custody** contract uncovered **4 critical a
 ## 🛡️ Acknowledged Protections (Verified)
 
 To ensure this audit's accuracy, we also verified the following protections which are **working correctly**:
-*   **Max Cosigners:** The contract prevents adding infinite participants (e.g., Txs failing with 'Max cosigner limit').
+*   **Protective Limit - Max Cosigners:** 
+    *   **Evidence:** [0xfb6f0a60...](https://sepolia.etherscan.io/tx/0xfb6f0a600d65722433a2c11e89a992564a2746c9d1fde5a1197fd345bbbe8d21)
+    *   **Result:** `Fail with error 'Max cosigner limit'`
+    *   **Insight:** The contract correctly limits the number of participants. However, **VUL-02** allows the vault creator to set the quorum to `1` regardless of how many participants are added. This means even a 2-of-2 multisig can be reduced to a 1-of-2 "multisig", bypassing the governance limit.
 *   **Signer Validation:** The contract prevents unauthorized signatures (e.g., Txs failing with 'Not a valid signer').
 *   **Vault Uniqueness:** Basic zero-vault collisions are now blocked in recent updates.
 
