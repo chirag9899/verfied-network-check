@@ -1,7 +1,7 @@
 # 📑 Security Audit Report: Verified Custody
 
 **Date:** December 30, 2025  
-**Version:** 1.1 (Final - Updated Evidence)  
+**Version:** 1.2 (Final - Validated & Pruned)  
 **Target:** [0x3B3AD30e32fFef3dD598dd3EfDf6DCC392897786](https://sepolia.etherscan.io/address/0x3B3AD30e32fFef3dD598dd3EfDf6DCC392897786)  
 **Status:** 🔴 **NON-PRODUCTION READY**
 
@@ -9,17 +9,16 @@
 
 ## 🔍 Executive Summary
 
-The security audit of the **Verified Custody** contract uncovered **5 critical and high-severity vulnerabilities**. The most severe findings allow an external attacker to recover "protected" private keys from the blockchain in under one second. Furthermore, the multisig governance model can be completely bypassed through Sybil attacks and threshold manipulation.
+The security audit of the **Verified Custody** contract uncovered **4 critical and high-severity vulnerabilities** that are 100% verified on the Sepolia contract. While some administrative limits (like max participants) are in place, the core security premise of the multisig—protecting private keys and requiring multiple signatures—is fundamentally broken.
 
-### 🚩 Vulnerability Overview
+### 🚩 Verified Vulnerabilities
 
 | ID | Title | Severity | Likelihood | Impact |
 |---|---|---|---|---|
 | **VUL-01** | **Private Key Recovery (PIN Crack)** | 🔴 **CRITICAL** | High | Total Loss of Assets |
-| **VUL-02** | Sybil Attack (Multi-ID) | 🔴 **CRITICAL** | High | Governance Takeover |
-| **VUL-03** | Quorum manipulation (1-of-N) | 🔴 **CRITICAL** | High | Bypass of Security |
-| **VUL-04** | Calldata Privacy Leak | 🟠 **HIGH** | Guaranteed | Permanent Exposure |
-| **VUL-05** | Gas Griefing / State Bloat | 🟠 **HIGH** | Medium | Denial of Service |
+| **VUL-02** | **Quorum Bypass (Set to 1)** | 🔴 **CRITICAL** | High | Bypass of Multisig Security |
+| **VUL-03** | **Calldata Privacy Leak** | 🟠 **HIGH** | Guaranteed | Permanent Exposure |
+| **VUL-04** | **Gas Griefing / State Bloat** | 🟠 **HIGH** | Medium | Denial of Service |
 
 ---
 
@@ -27,51 +26,49 @@ The security audit of the **Verified Custody** contract uncovered **5 critical a
 
 ### VUL-01: Private Key Recovery (PIN Brute-force)
 > [!CAUTION]
-> **Severity:** CRITICAL (CVSS 10.0) | **Likelihood:** HIGH
+> **Severity:** CRITICAL (CVSS 10.0)
 
-*   **Root Cause:** The contract relies on weak symmetric encryption (AES with 4-digit PIN) to "protect" shards on a public ledger. 
-*   **Attack Vector:** An attacker captures the encrypted shard from public calldata and runs a local brute-force attack (10,000 combinations).
-*   **Impact:** Complete recovery of any private key managed by the system.
+*   **Analysis:** Shards are encrypted with a 4-digit PIN (10,000 combinations). Since all shards are public in transaction calldata, any external attacker can brute-force the PIN off-chain in milliseconds.
+*   **Impact:** Complete recovery of any "protected" private key.
 *   **Proof:** `scripts/proof_live_pin_crack.js`
-*   **Evidence:** [0x209d224e...](https://sepolia.etherscan.io/tx/0x209d224e02ba4b6475fe8cc19c623764b34c565bae7db3d7faf1d9138283863e)
+*   **Evidence:** [0x209d224e...](https://sepolia.etherscan.io/tx/0x209d224e02ba4b6475fe8cc19c623764b34c565bae7db3d7faf1d9138283863e) (Status: **Success**)
 
 ---
 
-### VUL-02 & VUL-03: Governance Bypass (Sybil & Quorum)
+### VUL-02: Quorum Manipulation (1-of-N Bypass)
 > [!IMPORTANT]
-> **Severity:** CRITICAL (CVSS 9.1) | **Likelihood:** HIGH
+> **Severity:** CRITICAL (CVSS 9.0)
 
-*   **Root Cause:** `addParticipant` lacks identity verification, and `defineQuorum` allows any creator to set a threshold of `1` regardless of participant count.
-*   **Attack Vector:** (1) A single attacker adds multiple participant IDs they control. (2) The attacker sets the quorum to 1 to bypass multisig checks.
-*   **Impact:** A multisig vault is effectively reduced to a single-signature wallet, defeating the primary security purpose.
+*   **Analysis:** The `defineQuorum` function allows a vault creator to set their quorum to `1` at any time. This effectively converts a multisig vault into a single-signature wallet with no secondary oversight.
+*   **Impact:** Destroys the multisig security model.
 *   **Proof:** `scripts/test_participant_manipulation.js`
+*   **Evidence:** [0xb666fc49...](https://sepolia.etherscan.io/tx/0xb666fc49a1332d02e6d8a79867316fb47de4ba50295e06e344f02d854b0c9086) (Confirmed success on `addParticipant` + `defineQuorum`).
 
 ---
 
-### VUL-04: Calldata Privacy Leak
+### VUL-03: Calldata Privacy Leak
 > [!WARNING]
-> **Severity:** HIGH (CVSS 8.6) | **Likelihood:** HIGH
+> **Severity:** HIGH (CVSS 8.6)
 
-*   **Root Cause:** Architectural reliance on public transaction calldata for storing "sensitive" recovery shards.
-*   **Exploit:** All data sent to `addParticipant` is permanently indexed by blockchain explorers (e.g., Etherscan) and history nodes.
-*   **Impact:** All shards are public forever, even if the contract state is later modified.
+*   **Analysis:** The system relies on public transaction calldata to store sensitive shards. This data is permanently indexed by Etherscan and history nodes, making recovery information accessible to anyone forever.
 
 ---
 
-### VUL-05: Gas Griefing (DoS)
+### VUL-04: Gas Griefing (DoS)
 > [!NOTE]
-> **Severity:** HIGH (CVSS 7.5) | **Likelihood:** MEDIUM
+> **Severity:** HIGH (CVSS 7.5)
 
-*   **Root Cause:** Lack of input size validation on the `_shard` string.
-*   **Attack Vector:** Attacker submits massive strings (e.g., 50KB+) to the contract, causing state bloat and potential block-level gas pressure.
-*   **Impact:** Increased costs for all users and potential disruption of the node network.
-*   **Evidence:** [0x8c4d3bfe...](https://sepolia.etherscan.io/tx/0x8c4d3bfe4c1f9a63f4628278919d539bf17d398d80875c6669bcc0feba2418da)
+*   **Analysis:** The `_shard` input has no length validation. We successfully uploaded 1KB and 10KB payloads to the contract.
+*   **Impact:** Intentional state bloat and excessive resource consumption.
+*   **Evidence:** [0x8c4d3bfe...](https://sepolia.etherscan.io/tx/0x8c4d3bfe4c1f9a63f4628278919d539bf17d398d80875c6669bcc0feba2418da) (Status: **Success**)
 
 ---
 
-## 🛡️ Remediation Roadmap
+## 🛡️ Acknowledged Protections (Verified)
 
-1.  **Immediate Deprecation:** The current contract should be considered compromised.
-2.  **Asymmetric Encryption:** Replace PIN-based encryption with strong Asymmetric (RSA/ECC) or Zero-Knowledge systems.
-3.  **Strict Validation:** Enforce Minimum Quorum (e.g., > 50% of participants) and validate input lengths.
-4.  **Off-Chain Privacy:** Sensitive shards should never be stored in calldata. Use off-chain storage (IPFS/Arweave) with strong encryption if necessary.
+To ensure this audit's accuracy, we also verified the following protections which are **working correctly**:
+*   **Max Cosigners:** The contract prevents adding infinite participants (e.g., Txs failing with 'Max cosigner limit').
+*   **Signer Validation:** The contract prevents unauthorized signatures (e.g., Txs failing with 'Not a valid signer').
+*   **Vault Uniqueness:** Basic zero-vault collisions are now blocked in recent updates.
+
+**Conclusion:** While basic access controls are improving, the **cryptographic protection of keys (AES-PIN)** and **governance thresholds (Quorum=1)** are deeply flawed and should be the top priority for remediation.
